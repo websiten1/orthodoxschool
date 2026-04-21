@@ -1,7 +1,9 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, Prisma } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 import bcrypt from "bcryptjs"
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log("Seeding database...")
@@ -469,11 +471,11 @@ async function main() {
   ]
 
   for (const lessonData of inquirerLessons) {
-    const { quiz, ...data } = lessonData
+    const { quiz, id, jurisdictionNotes, ...data } = lessonData
     const lesson = await prisma.lesson.upsert({
       where: { slug: data.slug },
-      update: { ...data, courseId: inquirerCourse.id, status: "PUBLISHED" },
-      create: { ...data, courseId: inquirerCourse.id, status: "PUBLISHED" },
+      update: { ...data, courseId: inquirerCourse.id, status: "PUBLISHED", jurisdictionNotes: jurisdictionNotes as Prisma.InputJsonValue ?? Prisma.JsonNull },
+      create: { id, ...data, courseId: inquirerCourse.id, status: "PUBLISHED", jurisdictionNotes: jurisdictionNotes as Prisma.InputJsonValue ?? Prisma.JsonNull },
     })
     if (quiz) {
       await prisma.quiz.upsert({
@@ -609,11 +611,11 @@ async function main() {
   ]
 
   for (const lessonData of catechumenLessons) {
-    const { quiz, ...data } = lessonData
+    const { quiz, id, jurisdictionNotes, ...data } = lessonData
     const lesson = await prisma.lesson.upsert({
       where: { slug: data.slug },
-      update: { ...data, courseId: catechumenCourse.id, status: "PUBLISHED" },
-      create: { ...data, courseId: catechumenCourse.id, status: "PUBLISHED" },
+      update: { ...data, courseId: catechumenCourse.id, status: "PUBLISHED", jurisdictionNotes: jurisdictionNotes as Prisma.InputJsonValue ?? Prisma.JsonNull },
+      create: { id, ...data, courseId: catechumenCourse.id, status: "PUBLISHED", jurisdictionNotes: jurisdictionNotes as Prisma.InputJsonValue ?? Prisma.JsonNull },
     })
     if (quiz) {
       await prisma.quiz.upsert({
