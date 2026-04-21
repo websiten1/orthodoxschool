@@ -6,18 +6,28 @@ import type { Metadata } from "next"
 export const metadata: Metadata = { title: "Reading Plans" }
 
 export default async function ReadingPlansPage() {
-  const session = await auth()
-  const plans = await prisma.readingPlan.findMany({ orderBy: { createdAt: "asc" } })
-
+  let session = null
+  let plans: any[] = []
   let userProgress: Record<string, number[]> = {}
-  if (session?.user?.id) {
-    const progress = await prisma.readingPlanProgress.findMany({
-      where: { userId: session.user.id },
-    })
-    for (const p of progress) {
-      if (!userProgress[p.planId]) userProgress[p.planId] = []
-      userProgress[p.planId].push(p.day)
-    }
+
+  try {
+    session = await auth()
+  } catch {}
+
+  try {
+    plans = await prisma.readingPlan.findMany({ orderBy: { createdAt: "asc" } })
+  } catch {}
+
+  if (session?.user?.id && plans.length > 0) {
+    try {
+      const progress = await prisma.readingPlanProgress.findMany({
+        where: { userId: session.user.id },
+      })
+      for (const p of progress) {
+        if (!userProgress[p.planId]) userProgress[p.planId] = []
+        userProgress[p.planId].push(p.day)
+      }
+    } catch {}
   }
 
   return (
@@ -43,7 +53,7 @@ export default async function ReadingPlansPage() {
         </p>
       ) : (
         <div className="divide-y divide-[var(--border)]">
-          {plans.map((plan) => {
+          {plans.map((plan: any) => {
             const days = plan.days as any[]
             const completed = userProgress[plan.id]?.length ?? 0
             const pct = days.length > 0 ? Math.round((completed / days.length) * 100) : 0

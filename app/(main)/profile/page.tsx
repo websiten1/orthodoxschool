@@ -7,52 +7,58 @@ import type { Metadata } from "next"
 export const metadata: Metadata = { title: "Profile" }
 
 export default async function ProfilePage() {
-  const session = await auth()
+  let session = null
+  try {
+    session = await auth()
+  } catch {}
+
   if (!session?.user?.id) redirect("/login")
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      track: true,
-      jurisdiction: true,
-      createdAt: true,
-    },
-  })
+  let user: any = null
+  let pillarsWithProgress: any[] = []
+  let totalLessons = 0
+  let totalCompleted = 0
+
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, name: true, email: true, track: true, jurisdiction: true, createdAt: true },
+    })
+  } catch {}
 
   if (!user) redirect("/login")
 
-  const allPillars = await prisma.pillar.findMany({
-    orderBy: { order: "asc" },
-    include: {
-      courses: {
-        where: { track: user.track },
-        include: {
-          lessons: {
-            where: { status: "PUBLISHED" },
-            include: { progress: { where: { userId: user.id } } },
+  try {
+    const allPillars = await prisma.pillar.findMany({
+      orderBy: { order: "asc" },
+      include: {
+        courses: {
+          where: { track: user.track },
+          include: {
+            lessons: {
+              where: { status: "PUBLISHED" },
+              include: { progress: { where: { userId: user.id } } },
+            },
           },
         },
       },
-    },
-  })
+    })
 
-  const pillarsWithProgress = allPillars.map((p) => {
-    let total = 0
-    let completed = 0
-    for (const c of p.courses) {
-      for (const l of c.lessons) {
-        total++
-        if (l.progress.length > 0) completed++
+    pillarsWithProgress = allPillars.map((p: any) => {
+      let total = 0
+      let completed = 0
+      for (const c of p.courses) {
+        for (const l of c.lessons) {
+          total++
+          if (l.progress.length > 0) completed++
+        }
       }
-    }
-    return { id: p.id, title: p.title, slug: p.slug, total, completed }
-  })
+      return { id: p.id, title: p.title, slug: p.slug, total, completed }
+    })
 
-  const totalLessons = pillarsWithProgress.reduce((a, p) => a + p.total, 0)
-  const totalCompleted = pillarsWithProgress.reduce((a, p) => a + p.completed, 0)
+    totalLessons = pillarsWithProgress.reduce((a: number, p: any) => a + p.total, 0)
+    totalCompleted = pillarsWithProgress.reduce((a: number, p: any) => a + p.completed, 0)
+  } catch {}
 
   return (
     <ProfileClient

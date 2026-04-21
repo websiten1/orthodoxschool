@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ProgressBar } from "@/components/ui/progress-bar"
-import { Badge } from "@/components/ui/badge"
 import { CheckCircle } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
 
@@ -13,8 +12,12 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const pillar = await prisma.pillar.findUnique({ where: { slug } })
-  return { title: pillar?.title ?? "Pillar" }
+  try {
+    const pillar = await prisma.pillar.findUnique({ where: { slug } })
+    return { title: pillar?.title ?? "Pillar" }
+  } catch {
+    return { title: "Pillar" }
+  }
 }
 
 export default async function PillarPage({
@@ -23,30 +26,38 @@ export default async function PillarPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const session = await auth()
+
+  let session = null
+  try {
+    session = await auth()
+  } catch {}
+
   const userTrack = (session?.user as any)?.track ?? "INQUIRER"
 
-  const pillar = await prisma.pillar.findUnique({
-    where: { slug },
-    include: {
-      courses: {
-        orderBy: { order: "asc" },
-        include: {
-          lessons: {
-            where: { status: "PUBLISHED" },
-            orderBy: { order: "asc" },
-            include: session?.user
-              ? { progress: { where: { userId: session.user.id! } } }
-              : { progress: false },
+  let pillar: any = null
+  try {
+    pillar = await prisma.pillar.findUnique({
+      where: { slug },
+      include: {
+        courses: {
+          orderBy: { order: "asc" },
+          include: {
+            lessons: {
+              where: { status: "PUBLISHED" },
+              orderBy: { order: "asc" },
+              include: session?.user
+                ? { progress: { where: { userId: session.user.id! } } }
+                : { progress: false },
+            },
           },
         },
       },
-    },
-  })
+    })
+  } catch {}
 
   if (!pillar) notFound()
 
-  const trackCourses = pillar.courses.filter((c) => c.track === userTrack)
+  const trackCourses = pillar.courses.filter((c: any) => c.track === userTrack)
 
   function getLessonCompleted(lesson: any): boolean {
     return (lesson.progress as any[])?.length > 0
@@ -80,7 +91,7 @@ export default async function PillarPage({
         </p>
       ) : (
         <div className="flex flex-col gap-10">
-          {trackCourses.map((course) => {
+          {trackCourses.map((course: any) => {
             const total = course.lessons.length
             const completed = course.lessons.filter(getLessonCompleted).length
             const pct = total > 0 ? Math.round((completed / total) * 100) : 0
@@ -103,7 +114,7 @@ export default async function PillarPage({
                 </p>
 
                 <div className="divide-y divide-[var(--border)]">
-                  {course.lessons.map((lesson, li) => {
+                  {course.lessons.map((lesson: any, li: number) => {
                     const done = getLessonCompleted(lesson)
                     return (
                       <Link

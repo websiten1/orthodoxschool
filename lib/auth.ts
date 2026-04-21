@@ -5,14 +5,27 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
+// next-auth v5 reads AUTH_SECRET or NEXTAUTH_SECRET automatically.
+// Explicitly pass secret so missing-secret errors are caught at startup,
+// not silently swallowed at request time.
+const secret =
+  process.env.NEXTAUTH_SECRET ??
+  process.env.AUTH_SECRET ??
+  (process.env.NODE_ENV === "development" ? "dev-secret-change-in-production" : undefined)
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -21,16 +34,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
-        if (!user || !user.password) return null
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        )
-        if (!valid) return null
-        return user
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          })
+          if (!user || !user.password) return null
+          const valid = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          )
+          if (!valid) return null
+          return user
+        } catch {
+          return null
+        }
       },
     }),
   ],

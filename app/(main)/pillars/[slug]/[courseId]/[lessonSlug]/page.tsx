@@ -10,8 +10,12 @@ export async function generateMetadata({
   params: Promise<{ lessonSlug: string }>
 }): Promise<Metadata> {
   const { lessonSlug } = await params
-  const lesson = await prisma.lesson.findUnique({ where: { slug: lessonSlug } })
-  return { title: lesson?.title ?? "Lesson" }
+  try {
+    const lesson = await prisma.lesson.findUnique({ where: { slug: lessonSlug } })
+    return { title: lesson?.title ?? "Lesson" }
+  } catch {
+    return { title: "Lesson" }
+  }
 }
 
 export default async function LessonPage({
@@ -20,45 +24,56 @@ export default async function LessonPage({
   params: Promise<{ slug: string; courseId: string; lessonSlug: string }>
 }) {
   const { slug, courseId, lessonSlug } = await params
-  const session = await auth()
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { slug: lessonSlug },
-    include: {
-      quiz: true,
-      course: {
-        include: {
-          pillar: true,
-          lessons: {
-            where: { status: "PUBLISHED" },
-            orderBy: { order: "asc" },
+  let session = null
+  try {
+    session = await auth()
+  } catch {}
+
+  let lesson: any = null
+  try {
+    lesson = await prisma.lesson.findUnique({
+      where: { slug: lessonSlug },
+      include: {
+        quiz: true,
+        course: {
+          include: {
+            pillar: true,
+            lessons: {
+              where: { status: "PUBLISHED" },
+              orderBy: { order: "asc" },
+            },
+          },
+        },
+        discussions: {
+          where: { status: "published", parentId: null },
+          orderBy: { createdAt: "asc" },
+          include: {
+            user: { select: { name: true, image: true } },
+            replies: {
+              include: { user: { select: { name: true, image: true } } },
+              orderBy: { createdAt: "asc" },
+            },
           },
         },
       },
-      discussions: {
-        where: { status: "published", parentId: null },
-        orderBy: { createdAt: "asc" },
-        include: {
-          user: { select: { name: true, image: true } },
-          replies: {
-            include: { user: { select: { name: true, image: true } } },
-            orderBy: { createdAt: "asc" },
-          },
-        },
-      },
-    },
-  })
+    })
+  } catch {}
 
   if (!lesson || lesson.status !== "PUBLISHED") notFound()
 
-  const isCompleted = session?.user
-    ? !!(await prisma.progress.findUnique({
-        where: { userId_lessonId: { userId: session.user.id!, lessonId: lesson.id } },
-      }))
-    : false
+  let isCompleted = false
+  if (session?.user?.id) {
+    try {
+      const prog = await prisma.progress.findUnique({
+        where: { userId_lessonId: { userId: session.user.id, lessonId: lesson.id } },
+      })
+      isCompleted = !!prog
+    } catch {}
+  }
 
   const allLessons = lesson.course.lessons
-  const currentIdx = allLessons.findIndex((l) => l.id === lesson.id)
+  const currentIdx = allLessons.findIndex((l: any) => l.id === lesson.id)
   const prevLesson =
     currentIdx > 0
       ? { ...allLessons[currentIdx - 1], courseId: lesson.courseId }
@@ -68,16 +83,11 @@ export default async function LessonPage({
       ? { ...allLessons[currentIdx + 1], courseId: lesson.courseId }
       : null
 
-  const quizData = lesson.quiz
-    ? { questions: lesson.quiz.questions as any }
-    : null
+  const quizData = lesson.quiz ? { questions: lesson.quiz.questions as any } : null
 
   return (
     <LessonViewer
-      lesson={{
-        ...lesson,
-        jurisdictionNotes: lesson.jurisdictionNotes as any,
-      }}
+      lesson={{ ...lesson, jurisdictionNotes: lesson.jurisdictionNotes as any }}
       pillarSlug={slug}
       courseId={courseId}
       quiz={quizData}

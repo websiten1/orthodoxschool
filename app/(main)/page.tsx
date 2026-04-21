@@ -1,7 +1,5 @@
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
-import { ProgressBar } from "@/components/ui/progress-bar"
 
 const PILLARS_OVERVIEW = [
   { slug: "scripture-and-tradition", icon: "I", title: "Scripture & Holy Tradition", desc: "How Orthodoxy reads the Bible within the living Tradition; canon, typology, the Fathers as interpreters." },

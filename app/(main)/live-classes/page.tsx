@@ -6,21 +6,35 @@ import type { Metadata } from "next"
 export const metadata: Metadata = { title: "Live Classes" }
 
 export default async function LiveClassesPage() {
-  const session = await auth()
+  let session = null
+  let upcoming: any[] = []
+  let past: any[] = []
+
+  try {
+    session = await auth()
+  } catch {}
+
   const now = new Date()
 
-  const upcoming = await prisma.liveClass.findMany({
-    where: { startsAt: { gte: now } },
-    orderBy: { startsAt: "asc" },
-    include: { pillar: true, rsvps: session?.user ? { where: { userId: session.user.id! } } : false },
-  })
+  try {
+    upcoming = await prisma.liveClass.findMany({
+      where: { startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      include: {
+        pillar: true,
+        rsvps: session?.user ? { where: { userId: session.user.id! } } : false,
+      },
+    })
+  } catch {}
 
-  const past = await prisma.liveClass.findMany({
-    where: { startsAt: { lt: now }, recordingUrl: { not: null } },
-    orderBy: { startsAt: "desc" },
-    take: 10,
-    include: { pillar: true },
-  })
+  try {
+    past = await prisma.liveClass.findMany({
+      where: { startsAt: { lt: now }, recordingUrl: { not: null } },
+      orderBy: { startsAt: "desc" },
+      take: 10,
+      include: { pillar: true },
+    })
+  } catch {}
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16 fade-in">
@@ -38,7 +52,6 @@ export default async function LiveClassesPage() {
         hosted via Zoom; recordings are archived here afterward.
       </p>
 
-      {/* Upcoming */}
       <div className="mb-14">
         <h2 className="font-serif text-lg font-normal text-[var(--text-primary)] mb-6">
           Upcoming sessions
@@ -49,7 +62,7 @@ export default async function LiveClassesPage() {
           </p>
         ) : (
           <div className="divide-y divide-[var(--border)]">
-            {upcoming.map((cls) => {
+            {upcoming.map((cls: any) => {
               const rsvpd = session?.user && (cls.rsvps as any[])?.length > 0
               return (
                 <div key={cls.id} className="py-6">
@@ -78,9 +91,7 @@ export default async function LiveClassesPage() {
                     </div>
                     <div className="shrink-0">
                       {rsvpd ? (
-                        <span className="text-xs font-sans text-[var(--accent)]">
-                          RSVP'd
-                        </span>
+                        <span className="text-xs font-sans text-[var(--accent)]">RSVP'd</span>
                       ) : cls.joinUrl ? (
                         <a
                           href={cls.joinUrl}
@@ -100,14 +111,13 @@ export default async function LiveClassesPage() {
         )}
       </div>
 
-      {/* Past recordings */}
       {past.length > 0 && (
         <div>
           <h2 className="font-serif text-lg font-normal text-[var(--text-primary)] mb-6">
             Recordings
           </h2>
           <div className="divide-y divide-[var(--border)]">
-            {past.map((cls) => (
+            {past.map((cls: any) => (
               <div key={cls.id} className="py-5 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-sans text-[var(--text-primary)]">{cls.title}</p>

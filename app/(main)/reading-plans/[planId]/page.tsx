@@ -10,8 +10,12 @@ export async function generateMetadata({
   params: Promise<{ planId: string }>
 }): Promise<Metadata> {
   const { planId } = await params
-  const plan = await prisma.readingPlan.findUnique({ where: { id: planId } })
-  return { title: plan?.title ?? "Reading Plan" }
+  try {
+    const plan = await prisma.readingPlan.findUnique({ where: { id: planId } })
+    return { title: plan?.title ?? "Reading Plan" }
+  } catch {
+    return { title: "Reading Plan" }
+  }
 }
 
 export default async function ReadingPlanPage({
@@ -20,21 +24,33 @@ export default async function ReadingPlanPage({
   params: Promise<{ planId: string }>
 }) {
   const { planId } = await params
-  const session = await auth()
 
-  const plan = await prisma.readingPlan.findUnique({ where: { id: planId } })
+  let session = null
+  try {
+    session = await auth()
+  } catch {}
+
+  let plan: any = null
+  try {
+    plan = await prisma.readingPlan.findUnique({ where: { id: planId } })
+  } catch {}
+
   if (!plan) notFound()
 
-  const progress = session?.user?.id
-    ? await prisma.readingPlanProgress.findMany({
+  let completedDays: number[] = []
+  let reflections: Record<number, string> = {}
+
+  if (session?.user?.id) {
+    try {
+      const progress = await prisma.readingPlanProgress.findMany({
         where: { userId: session.user.id, planId },
       })
-    : []
-
-  const completedDays = progress.map((p) => p.day)
-  const reflections = Object.fromEntries(
-    progress.filter((p) => p.reflection).map((p) => [p.day, p.reflection!])
-  )
+      completedDays = progress.map((p: any) => p.day)
+      reflections = Object.fromEntries(
+        progress.filter((p: any) => p.reflection).map((p: any) => [p.day, p.reflection!])
+      )
+    } catch {}
+  }
 
   return (
     <ReadingPlanClient

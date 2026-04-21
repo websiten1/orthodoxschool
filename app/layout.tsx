@@ -23,7 +23,14 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
+  // Wrapped in try/catch: a missing AUTH_SECRET or unreachable database
+  // must not crash every page — the site should still render without a session.
+  let session = null
+  try {
+    session = await auth()
+  } catch {
+    // Session unavailable; pages render as unauthenticated.
+  }
 
   return (
     <html lang="en" className="h-full">
@@ -39,7 +46,10 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col fade-in" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
+      <body
+        className="min-h-full flex flex-col fade-in"
+        style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}
+      >
         <SessionProvider session={session}>{children}</SessionProvider>
       </body>
     </html>

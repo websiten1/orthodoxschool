@@ -10,21 +10,25 @@ export default async function GlossaryPage({
   searchParams: Promise<{ q?: string }>
 }) {
   const { q } = await searchParams
-  const terms = await prisma.glossaryTerm.findMany({
-    where: q
-      ? {
-          OR: [
-            { term: { contains: q, mode: "insensitive" } },
-            { definition: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
-    orderBy: { term: "asc" },
-  })
+
+  let terms: any[] = []
+  try {
+    terms = await prisma.glossaryTerm.findMany({
+      where: q
+        ? {
+            OR: [
+              { term: { contains: q, mode: "insensitive" } },
+              { definition: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : undefined,
+      orderBy: { term: "asc" },
+    })
+  } catch {}
 
   const letters = Array.from(
-    new Set(terms.map((t) => t.term[0].toUpperCase()))
-  ).sort()
+    new Set(terms.map((t: any) => t.term[0].toUpperCase()))
+  ).sort() as string[]
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16 fade-in">
@@ -49,7 +53,7 @@ export default async function GlossaryPage({
             name="q"
             defaultValue={q}
             placeholder="Search terms..."
-            className="flex-1 px-4 py-2 text-sm font-sans bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none border-none"
+            className="flex-1 px-4 py-2 text-sm font-sans bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
           />
           <button
             type="submit"
@@ -61,9 +65,9 @@ export default async function GlossaryPage({
       </form>
 
       {/* Letter nav */}
-      {!q && (
+      {!q && letters.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-10">
-          {letters.map((l) => (
+          {letters.map((l: string) => (
             <a
               key={l}
               href={`#${l}`}
@@ -77,13 +81,13 @@ export default async function GlossaryPage({
 
       {terms.length === 0 ? (
         <p className="text-sm font-sans text-[var(--text-secondary)]">
-          No terms found{q ? ` for "${q}"` : ""}.
+          {q ? `No terms found for "${q}".` : "No glossary terms yet. Seed the database to populate."}
         </p>
       ) : (
         <div>
-          {letters.map((letter) => {
+          {letters.map((letter: string) => {
             const group = terms.filter(
-              (t) => t.term[0].toUpperCase() === letter
+              (t: any) => t.term[0].toUpperCase() === letter
             )
             if (group.length === 0) return null
             return (
@@ -92,7 +96,7 @@ export default async function GlossaryPage({
                   {letter}
                 </p>
                 <div className="divide-y divide-[var(--border)]">
-                  {group.map((term) => (
+                  {group.map((term: any) => (
                     <div key={term.id} className="py-5">
                       <h2 className="font-serif text-lg font-normal text-[var(--text-primary)] mb-2">
                         {term.term}
@@ -100,12 +104,12 @@ export default async function GlossaryPage({
                       <p className="text-sm font-sans text-[var(--text-secondary)] leading-relaxed mb-3">
                         {term.definition}
                       </p>
-                      {term.relatedTerms.length > 0 && (
+                      {term.relatedTerms?.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           <span className="text-xs font-sans text-[var(--text-secondary)]">
                             Related:
                           </span>
-                          {term.relatedTerms.map((rt) => (
+                          {term.relatedTerms.map((rt: string) => (
                             <Link
                               key={rt}
                               href={`/glossary?q=${encodeURIComponent(rt)}`}
