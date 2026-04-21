@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
@@ -39,7 +39,10 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl font-light text-[var(--text-primary)] text-center mb-8" style={{ letterSpacing: "0.02em" }}>
+      <h1
+        className="font-serif text-2xl font-light text-[var(--text-primary)] text-center mb-8"
+        style={{ letterSpacing: "0.02em" }}
+      >
         Sign in
       </h1>
 
@@ -60,9 +63,7 @@ export default function LoginPage() {
           required
           autoComplete="current-password"
         />
-        {error && (
-          <p className="text-xs text-red-600 font-sans">{error}</p>
-        )}
+        {error && <p className="text-xs text-red-600 font-sans">{error}</p>}
         <Button type="submit" disabled={loading} className="w-full mt-2">
           {loading ? "Signing in..." : "Sign in"}
         </Button>
@@ -73,7 +74,10 @@ export default function LoginPage() {
           <div className="w-full border-t border-[var(--border)]" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="px-3 font-sans text-[var(--text-secondary)]" style={{ backgroundColor: "var(--bg)" }}>
+          <span
+            className="px-3 font-sans text-[var(--text-secondary)]"
+            style={{ backgroundColor: "var(--bg)" }}
+          >
             or
           </span>
         </div>
@@ -95,5 +99,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
