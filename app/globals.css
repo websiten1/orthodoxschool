@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --bg: #F5F1EA;
+  --bg-card: #F0EBE0;
+  --text-primary: #1C1A17;
+  --text-secondary: #5A544C;
+  --accent: #6B1F1A;
+  --accent-hover: #551815;
+  --border: #D8CFBE;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #1A1815;
+    --bg-card: #201E1B;
+    --text-primary: #E8E1D3;
+    --text-secondary: #9A9186;
+    --accent: #A0443E;
+    --accent-hover: #B5524C;
+    --border: #2E2B26;
   }
 }
 
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text-primary);
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.prose-lesson {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.7;
+  max-width: 68ch;
+  color: var(--text-primary);
+}
+
+.prose-lesson p {
+  margin-bottom: 1.4em;
+}
+
+.prose-lesson h2 {
+  font-size: 1.4em;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  font-family: var(--font-serif);
+}
+
+.prose-lesson h3 {
+  font-size: 1.15em;
+  font-weight: 500;
+  margin-top: 1.6em;
+  margin-bottom: 0.4em;
+  font-family: var(--font-serif);
+}
+
+.prose-lesson blockquote {
+  border-left: 0.5px solid var(--border);
+  padding-left: 1.5em;
+  margin-left: 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.prose-lesson a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.drop-cap::first-letter {
+  float: left;
+  font-family: var(--font-serif);
+  font-size: 3.8em;
+  line-height: 0.75;
+  padding-right: 0.1em;
+  margin-top: 0.05em;
+  color: var(--text-primary);
+}
+
+.small-caps {
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.85em;
+}
+
+hr.ornament {
+  border: none;
+  text-align: center;
+  margin: 2.5em 0;
+  color: var(--text-secondary);
+}
+
+hr.ornament::before {
+  content: '· · ·';
+  font-family: var(--font-serif);
+  font-size: 1.1em;
+  letter-spacing: 0.4em;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 150ms ease-in;
+}
+
+.link-accent {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 100ms;
+}
+.link-accent:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+input, textarea, select {
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
 }
